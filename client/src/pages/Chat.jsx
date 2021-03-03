@@ -3,6 +3,11 @@ import { useState, useEffect } from "react";
 import queryString from 'query-string';
 import io from "socket.io-client";
 
+import InfoBar from "../components/InfoBar";
+import Messages from "../components/Messages";
+import Input from "../components/Input";
+import TextContainer from "../components/TextContainer";
+
 let socket;
 const ENDPOINT = process.env.REACT_APP_BASE_URL;
 
@@ -13,34 +18,55 @@ const Chat = ({ location }) => {
     "timeout": 10000,
     "transports": ["websocket"]
   };
-
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
+  const [users, setUsers] = useState('');
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    const { room, name } = queryString.parse(location.search)
+    const { name, room } = queryString.parse(location.search);
 
-    socket = io(ENDPOINT, connectionOptions)
+    socket = io(ENDPOINT, connectionOptions);
 
     setRoom(room);
     setName(name)
 
-    socket.emit("join", { name, room }, ({ error }) => {
-      alert(error)
-    })
+    socket.emit('join', { name, room }, (error) => {
+      if (error) {
+        alert(error);
+      }
+    });
+  }, [ENDPOINT, location.search]);
 
-    console.log(socket);
+  useEffect(() => {
+    socket.on('message', message => {
+      setMessages(messages => [...messages, message]);
+    });
 
-    return () => {
-      socket.emit('disconnect-client');
+    socket.on("roomData", ({ users }) => {
+      setUsers(users);
+    });
+  }, []);
 
-      socket.off();
+  const sendMessage = (event) => {
+    event.preventDefault();
+
+    if (message) {
+      socket.emit('sendMessage', message, () => setMessage(''));
     }
-  }, [ENDPOINT, location.search])
+  }
 
-
-
-  return <h1>Chat</h1>;
+  return (
+    <div className="outerContainer">
+      <div className="container">
+        <InfoBar room={room} />
+        <Messages messages={messages} name={name} />
+        <Input message={message} setMessage={setMessage} sendMessage={sendMessage} />
+      </div>
+      <TextContainer users={users} />
+    </div>
+  );
 };
 
 export default Chat;
