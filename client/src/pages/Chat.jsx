@@ -7,6 +7,12 @@ let socket;
 const ENDPOINT = process.env.REACT_APP_BASE_URL;
 
 const Chat = ({ location }) => {
+  const connectionOptions = {
+    "force new connection": true,
+    "reconnectionAttempts": "Infinity",
+    "timeout": 10000,
+    "transports": ["websocket"]
+  };
 
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
@@ -14,7 +20,7 @@ const Chat = ({ location }) => {
   useEffect(() => {
     const { room, name } = queryString.parse(location.search)
 
-    socket = io(ENDPOINT)
+    socket = io(ENDPOINT, connectionOptions)
 
     setRoom(room);
     setName(name)
